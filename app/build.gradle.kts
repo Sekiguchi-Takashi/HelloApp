@@ -11,8 +11,25 @@ android {
         applicationId = "com.sekiguchi.helloapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
+    }
+
+    // 署名鍵をリポジトリ内に固定することで、ビルドのたびに署名が変わるのを防ぎ、
+    // アンインストールせずに上書きアップデートできるようにする
+    signingConfigs {
+        create("shared") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("shared")
+        }
     }
 
     compileOptions {
@@ -24,5 +41,3 @@ android {
         jvmTarget = "17"
     }
 }
-
-// 外部ライブラリ依存ゼロ(標準SDKのみ)。ビルドが速く、失敗要因が最小になります。
