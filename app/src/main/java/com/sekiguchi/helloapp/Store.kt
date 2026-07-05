@@ -3,16 +3,22 @@ package com.sekiguchi.helloapp
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// 1件のメモ。dateは画面2の「日付」、deleteDateは「削除日」(いずれも yyyy-MM-dd)
+// 1件のメモ。
+// type: "normal"(画面2) / "memory"(画面4)
+// deleteDate: メモリーは空文字(自動削除なし)
+// photo: メモリーの写真ファイルパス(なければ空文字)
 data class Entry(
     val id: Long,
     val date: String,
     val memo: String,
-    val deleteDate: String
+    val deleteDate: String,
+    val type: String = "normal",
+    val photo: String = ""
 )
 
 object Store {
@@ -22,8 +28,8 @@ object Store {
 
     fun today(): String = fmt.format(Date())
 
-    // 読み込み時に「削除日を過ぎたもの」(=削除日の翌日以降)を自動で消す。
-    // yyyy-MM-dd 形式は文字列比較がそのまま日付比較になる。
+    // 読み込み時に「削除日を過ぎた通常メモ」を自動で消す。
+    // 削除日が空(メモリー)のものは自動削除の対象外。
     fun load(context: Context): MutableList<Entry> {
         val raw = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
             .getString(KEY, "[]") ?: "[]"
@@ -36,12 +42,14 @@ object Store {
                     o.getLong("id"),
                     o.getString("date"),
                     o.getString("memo"),
-                    o.getString("deleteDate")
+                    o.optString("deleteDate", ""),
+                    o.optString("type", "normal"),
+                    o.optString("photo", "")
                 )
             )
         }
         val t = today()
-        val kept = list.filter { it.deleteDate >= t }.toMutableList()
+        val kept = list.filter { it.deleteDate.isEmpty() || it.deleteDate >= t }.toMutableList()
         if (kept.size != list.size) save(context, kept)
         return kept
     }
@@ -55,6 +63,8 @@ object Store {
                     .put("date", e.date)
                     .put("memo", e.memo)
                     .put("deleteDate", e.deleteDate)
+                    .put("type", e.type)
+                    .put("photo", e.photo)
             )
         }
         context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -67,7 +77,11 @@ object Store {
         save(context, list)
     }
 
+    // 削除時、写真ファイルも一緒に消してストレージを圧迫しないようにする
     fun removeIds(context: Context, ids: Set<Long>) {
-        save(context, load(context).filter { it.id !in ids })
+        val list = load(context)
+        list.filter { it.id in ids && it.photo.isNotEmpty() }
+            .forEach { runCatching { File(it.photo).delete() } }
+        save(context, list.filter { it.id !in ids })
     }
 }

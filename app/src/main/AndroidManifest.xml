@@ -18,6 +18,7 @@
 
         <activity android:name=".EntryActivity" android:exported="false" />
         <activity android:name=".ListActivity" android:exported="false" />
+        <activity android:name=".MemoryActivity" android:exported="false" />
     </application>
 
 </manifest>

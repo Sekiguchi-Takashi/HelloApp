@@ -65,6 +65,11 @@ class MainActivity : Activity() {
             refresh()
         }, lp())
 
+        // ボタン4: メモリー → 画面4
+        root.addView(button("メモリー", "#AB47BC") {
+            startActivity(Intent(this, MemoryActivity::class.java))
+        }, lp())
+
         statusHeader = TextView(this).apply {
             textSize = 16f
             setTypeface(null, Typeface.BOLD)
@@ -87,7 +92,8 @@ class MainActivity : Activity() {
     }
 
     private fun refresh() {
-        val entries = Store.load(this)
+        // メモリー(画面4で登録)はステータスに表示しない
+        val entries = Store.load(this).filter { it.type != "memory" }
         val sorted = if (sortByDate)
             entries.sortedByDescending { it.date }   // 日付が新しい順
         else

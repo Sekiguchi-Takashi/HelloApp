@@ -1,17 +1,25 @@
 package com.sekiguchi.helloapp
 
 import android.app.Activity
+import android.app.Dialog
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import java.io.File
 
-// 画面3: 登録一覧(日付が新しい順)。チェックした項目を削除できる
+// 画面3: 登録一覧(日付が新しい順)。
+// 通常メモとメモリー(写真付き)を両方表示。写真(小)をタップで拡大表示。
 class ListActivity : Activity() {
 
     private lateinit var listArea: LinearLayout
@@ -72,7 +80,6 @@ class ListActivity : Activity() {
         checks.clear()
         listArea.removeAllViews()
 
-        // 画面2の「日付」で新しい順に並べる
         val sorted = Store.load(this).sortedByDescending { it.date }
 
         if (sorted.isEmpty()) {
@@ -86,18 +93,65 @@ class ListActivity : Activity() {
         }
 
         for (e in sorted) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundColor(Color.WHITE)
+                setPadding(8, 12, 16, 12)
+            }
+
             val cb = CheckBox(this).apply {
-                text = "📅 ${e.date}  ${e.memo}\n　 削除日: ${e.deleteDate}"
+                text = if (e.type == "memory")
+                    "📷 ${e.date}  ${e.memo}"
+                else
+                    "📅 ${e.date}  ${e.memo}\n　 削除日: ${e.deleteDate}"
                 textSize = 15f
                 setTextColor(Color.parseColor("#37474F"))
-                setBackgroundColor(Color.WHITE)
-                setPadding(16, 20, 24, 20)
             }
             checks[e.id] = cb
-            listArea.addView(cb, LinearLayout.LayoutParams(
+            row.addView(cb, LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+
+            // 写真付きならサムネイルを表示。タップで拡大。
+            if (e.photo.isNotEmpty() && File(e.photo).exists()) {
+                val thumb = ImageView(this).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setImageBitmap(decodeScaled(e.photo, 200))
+                    setOnClickListener { showLarge(e.photo) }
+                }
+                row.addView(thumb, LinearLayout.LayoutParams(200, 200))
+            }
+
+            listArea.addView(row, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = 12 })
         }
+    }
+
+    // タップで写真を大きく表示(もう一度タップで閉じる)
+    private fun showLarge(path: String) {
+        val img = ImageView(this).apply {
+            adjustViewBounds = true
+            setImageBitmap(decodeScaled(path, 1200))
+            setBackgroundColor(Color.BLACK)
+        }
+        val dlg = Dialog(this)
+        dlg.setContentView(img)
+        dlg.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT)
+        img.setOnClickListener { dlg.dismiss() }
+        dlg.show()
+    }
+
+    // メモリ不足を避けるため縮小して読み込む
+    private fun decodeScaled(path: String, req: Int): Bitmap? {
+        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, opts)
+        var sample = 1
+        while (opts.outWidth / (sample * 2) >= req && opts.outHeight / (sample * 2) >= req) sample *= 2
+        return BitmapFactory.decodeFile(path,
+            BitmapFactory.Options().apply { inSampleSize = sample })
     }
 }

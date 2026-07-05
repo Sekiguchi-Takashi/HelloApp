@@ -107,11 +107,12 @@ class EntryActivity : Activity() {
             }
         }, lp())
 
-        // クリア → 入力を初期状態に戻す
+        // クリア → 入力を消して画面1へ戻る
         root.addView(button("クリア", "#90A4AE") {
             dateField.setText(Store.today())
             memoField.setText("")
             deleteField.setText("")
+            finish()
         }, lp())
 
         setContentView(ScrollView(this).apply { addView(root) })
