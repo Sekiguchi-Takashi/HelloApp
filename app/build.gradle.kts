@@ -11,8 +11,8 @@ android {
         applicationId = "com.sekiguchi.helloapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "3.0"
+        versionCode = 4
+        versionName = "4.0"
     }
 
     // 署名鍵をリポジトリ内に固定することで、ビルドのたびに署名が変わるのを防ぎ、

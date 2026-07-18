@@ -59,10 +59,9 @@ class MainActivity : Activity() {
             startActivity(Intent(this, ListActivity::class.java))
         }, lp())
 
-        // ボタン3: 並び替え(削除日順 ⇔ 日付順のトグル)
-        root.addView(button("並び替え", "#FFB300") {
-            sortByDate = !sortByDate
-            refresh()
+        // ボタン3: 習慣 → 画面5
+        root.addView(button("習慣", "#66BB6A") {
+            startActivity(Intent(this, HabitActivity::class.java))
         }, lp())
 
         // ボタン4: メモリー → 画面4
@@ -70,11 +69,16 @@ class MainActivity : Activity() {
             startActivity(Intent(this, MemoryActivity::class.java))
         }, lp())
 
+        // ステータス見出しをタップすると並び替えが切り替わる
         statusHeader = TextView(this).apply {
             textSize = 16f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#5D4037"))
             setPadding(0, 40, 0, 12)
+            setOnClickListener {
+                sortByDate = !sortByDate
+                refresh()
+            }
         }
         root.addView(statusHeader)
 
@@ -100,7 +104,8 @@ class MainActivity : Activity() {
             entries.sortedBy { it.deleteDate }       // 削除日(期限)が近い順
 
         statusHeader.text =
-            if (sortByDate) "ステータス:日付が新しい順" else "ステータス:削除日が近い順"
+            if (sortByDate) "ステータス:日付が新しい順 🔄タップで切替"
+            else "ステータス:削除日が近い順 🔄タップで切替"
 
         listArea.removeAllViews()
         if (sorted.isEmpty()) {
